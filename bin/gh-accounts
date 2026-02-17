@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+# =============================================================================
+# gh-accounts — GitHub SSH Account Manager
+# CLI entry point. Routes commands to the appropriate module.
+# =============================================================================
+
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Resolve library directory (works when installed or run from source)
+# ---------------------------------------------------------------------------
+resolve_lib_dir() {
+    local script_path
+    script_path="$(readlink -f "${BASH_SOURCE[0]}")"
+    local bin_dir
+    bin_dir="$(dirname "${script_path}")"
+
+    # Installed: /usr/local/bin/gh-accounts → libs at /usr/local/share/gh-accounts/lib/
+    local installed_lib="/usr/local/share/gh-accounts/lib"
+    if [[ -d "${installed_lib}" ]]; then
+        echo "${installed_lib}"
+        return
+    fi
+
+    # Source tree: bin/gh-accounts → ../lib/
+    local source_lib="${bin_dir}/../lib"
+    if [[ -d "${source_lib}" ]]; then
+        echo "$(cd "${source_lib}" && pwd)"
+        return
+    fi
+
+    echo "FATAL: Cannot locate gh-accounts library directory." >&2
+    exit 1
+}
+
+readonly LIB_DIR="$(resolve_lib_dir)"
+
+# ---------------------------------------------------------------------------
+# Source modules
+# ---------------------------------------------------------------------------
+# shellcheck source=../lib/utils.sh
+source "${LIB_DIR}/utils.sh"
+# shellcheck source=../lib/config.sh
+source "${LIB_DIR}/config.sh"
+# shellcheck source=../lib/backup.sh
+source "${LIB_DIR}/backup.sh"
+# shellcheck source=../lib/account.sh
+source "${LIB_DIR}/account.sh"
+# shellcheck source=../lib/doctor.sh
+source "${LIB_DIR}/doctor.sh"
+
+# ---------------------------------------------------------------------------
+# Usage / help
+# ---------------------------------------------------------------------------
+print_help() {
+    print_banner
+    cat <<'HELP'
+  USAGE
+    gh-accounts <command> [arguments] [options]
+
+  COMMANDS
+    create <name> <email>        Create a new GitHub SSH account
+    list                         List all configured accounts
+    delete <name>                Delete an account and its keys
+    update <name> --email <addr> Update account email
+    test <name>                  Test SSH authentication
+    backup                       Create a manual backup
+    restore                      Restore from a backup
+    doctor                       Run diagnostic checks
+    split-mode enable            Enable per-account config files
+    split-mode disable           Merge back into unified config
+    merge-configs                Merge split configs into unified config
+    export --json                Export accounts as JSON
+    version                      Print version
+    help                         Show this help message
+
+  EXAMPLES
+    gh-accounts create work work@company.com
+    gh-accounts create personal me@gmail.com
+    gh-accounts list
+    gh-accounts test work
+    gh-accounts update work --email new@company.com
+    gh-accounts delete personal
+    gh-accounts split-mode enable
+    gh-accounts export --json
+
+  DOCUMENTATION
+    https://github.com/noejunior792/gh-accounts
+
+HELP
+}
+
+# ---------------------------------------------------------------------------
+# Command router
+# ---------------------------------------------------------------------------
+main() {
+    local command="${1:-help}"
+    shift || true
+
+    case "${command}" in
+        create)
+            print_banner
+            local name="${1:-}"
+            local email="${2:-}"
+            if [[ -z "${name}" ]] || [[ -z "${email}" ]]; then
+                die "Usage: gh-accounts create <account_name> <email>"
+            fi
+            account_create "${name}" "${email}"
+            ;;
+
+        list|ls)
+            print_banner
+            account_list
+            ;;
+
+        delete|rm)
+            print_banner
+            local name="${1:-}"
+            if [[ -z "${name}" ]]; then
+                die "Usage: gh-accounts delete <account_name>"
+            fi
+            account_delete "${name}"
+            ;;
+
+        update)
+            print_banner
+            local name="${1:-}"
+            shift || true
+            local new_email=""
+            while [[ $# -gt 0 ]]; do
+                case "${1}" in
+                    --email)
+                        new_email="${2:-}"
+                        shift 2 || die "Missing value for --email"
+                        ;;
+                    *)
+                        die "Unknown option: ${1}"
+                        ;;
+                esac
+            done
+            if [[ -z "${name}" ]] || [[ -z "${new_email}" ]]; then
+                die "Usage: gh-accounts update <account_name> --email <new_email>"
+            fi
+            account_update "${name}" "${new_email}"
+            ;;
+
+        test)
+            print_banner
+            local name="${1:-}"
+            if [[ -z "${name}" ]]; then
+                die "Usage: gh-accounts test <account_name>"
+            fi
+            account_test "${name}"
+            ;;
+
+        backup)
+            print_banner
+            backup_create
+            ;;
+
+        restore)
+            print_banner
+            backup_restore
+            ;;
+
+        doctor)
+            print_banner
+            doctor_run
+            ;;
+
+        split-mode)
+            print_banner
+            local action="${1:-}"
+            case "${action}" in
+                enable)
+                    config_enable_split_mode
+                    ;;
+                disable)
+                    config_disable_split_mode
+                    ;;
+                *)
+                    die "Usage: gh-accounts split-mode <enable|disable>"
+                    ;;
+            esac
+            ;;
+
+        merge-configs)
+            print_banner
+            config_merge_all
+            ;;
+
+        export)
+            local format="${1:-}"
+            if [[ "${format}" != "--json" ]]; then
+                die "Usage: gh-accounts export --json"
+            fi
+            account_export_json
+            ;;
+
+        version|--version|-v)
+            echo "gh-accounts v$(get_version)"
+            ;;
+
+        help|--help|-h)
+            print_help
+            ;;
+
+        *)
+            log_error "Unknown command: ${command}"
+            echo ""
+            print_help
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
