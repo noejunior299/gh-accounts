@@ -1,6 +1,6 @@
 # gh-accounts
 
-> Manage multiple GitHub SSH identities on Debia Based System — securely, scalably, and without external dependencies.
+> Manage multiple GitHub SSH identities on Linux & macOS — securely, scalably, and without external dependencies.
 
 ---
 
@@ -226,8 +226,9 @@ Switch freely between modes — `merge-configs` and `split-mode enable/disable` 
 
 | Requirement | Supported |
 |---|---|
-| Ubuntu 22.04+ | ✅ |
-| Bash 5.x | ✅ |
+| Linux (any distro) | ✅ |
+| macOS | ✅ |
+| Bash 4.3+ / 5.x | ✅ |
 | Fish shell | ✅ (CLI is bash, works from any shell) |
 | OpenSSH | ✅ (ssh, ssh-keygen, ssh-agent, ssh-add) |
 | External deps | None — only coreutils, grep, sed, awk |
