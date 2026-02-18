@@ -255,8 +255,7 @@ Switch freely between modes — `merge-configs` and `split-mode enable/disable` 
 
 ## Roadmap
 
-- [ ] `gh-accounts switch <name>` — set a default active account
-- [ ] `gh-accounts use <name>` — set `user.name` and `user.email` in the current repo's git config, so commits are attributed to the correct identity
+- [ ] `gh-accounts switch <name> [--global]` — set `user.name` and `user.email` for the current repo (default) or globally, so commits are attributed to the correct identity
 - [ ] `gh-accounts import` — import existing SSH keys into management
 - [ ] `gh-accounts config` — interactive setup wizard
 - [ ] Shell completions for bash and fish
