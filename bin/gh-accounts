@@ -17,14 +17,14 @@ resolve_lib_dir() {
 
     # Source tree: bin/gh-accounts → ../lib/ (prefer dev source)
     local source_lib="${bin_dir}/../lib"
-    if [[ -d "${source_lib}" ]]; then
+    if [[ -f "${source_lib}/utils.sh" ]]; then
         echo "$(cd "${source_lib}" && pwd)"
         return
     fi
 
     # Installed: /usr/local/bin/gh-accounts → libs at /usr/local/share/gh-accounts/lib/
     local installed_lib="/usr/local/share/gh-accounts/lib"
-    if [[ -d "${installed_lib}" ]]; then
+    if [[ -f "${installed_lib}/utils.sh" ]]; then
         echo "${installed_lib}"
         return
     fi
