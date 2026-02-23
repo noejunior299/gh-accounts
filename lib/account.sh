@@ -1,14 +1,7 @@
 #!/usr/bin/env bash
-# =============================================================================
-# gh-accounts :: account.sh
-# Account lifecycle: create, delete, update, test, list, export.
-# =============================================================================
-
+# gh-accounts :: account.sh — Account lifecycle (create, delete, update, switch, test, list, export)
 set -euo pipefail
 
-# ---------------------------------------------------------------------------
-# Create a new GitHub SSH account
-# ---------------------------------------------------------------------------
 account_create() {
     local account="${1}"
     local email="${2}"
@@ -61,9 +54,6 @@ account_create() {
     echo "  git clone git@$(host_alias_for "${account}"):username/repo.git"
 }
 
-# ---------------------------------------------------------------------------
-# Delete an existing account
-# ---------------------------------------------------------------------------
 account_delete() {
     local account="${1}"
     validate_account_name "${account}"
@@ -99,9 +89,6 @@ account_delete() {
     log_success "Account '${account}' deleted."
 }
 
-# ---------------------------------------------------------------------------
-# Update account email
-# ---------------------------------------------------------------------------
 account_update() {
     local account="${1}"
     local new_email="${2}"
@@ -140,9 +127,6 @@ account_update() {
     log_success "Account '${account}' updated with email '${new_email}'."
 }
 
-# ---------------------------------------------------------------------------
-# Test SSH authentication for an account
-# ---------------------------------------------------------------------------
 account_test() {
     local account="${1}"
     validate_account_name "${account}"
@@ -173,9 +157,6 @@ account_test() {
     fi
 }
 
-# ---------------------------------------------------------------------------
-# List all managed accounts
-# ---------------------------------------------------------------------------
 account_list() {
     local accounts
     accounts="$(config_list_accounts 2>/dev/null)" || true
@@ -206,9 +187,6 @@ account_list() {
     echo ""
 }
 
-# ---------------------------------------------------------------------------
-# Export all accounts as JSON
-# ---------------------------------------------------------------------------
 account_export_json() {
     local accounts
     accounts="$(config_list_accounts 2>/dev/null)" || true
@@ -254,4 +232,60 @@ ENTRY
 
     echo ""
     echo "]"
+}
+
+account_switch() {
+    local account="${1}"
+    local scope="${2:-local}"   # "local" (default) or "global"
+
+    validate_account_name "${account}"
+
+    # Look up account in config
+    local accounts
+    accounts="$(config_list_accounts 2>/dev/null)" || true
+
+    if [[ -z "${accounts}" ]]; then
+        die "No GitHub SSH accounts found."
+    fi
+
+    local found_email="" found_alias=""
+    while IFS='|' read -r acct email alias kp mode managed; do
+        if [[ "${acct}" == "${account}" ]]; then
+            found_email="${email}"
+            found_alias="${alias}"
+            break
+        fi
+    done <<< "${accounts}"
+
+    if [[ -z "${found_email}" ]]; then
+        die "Account '${account}' not found. Run 'gh-accounts list' to see available accounts."
+    fi
+
+    # Derive user.name from account (or alias for default)
+    local git_name="${account}"
+
+    local git_flag="--local"
+    local scope_label="this repository"
+    if [[ "${scope}" == "global" ]]; then
+        git_flag="--global"
+        scope_label="global config"
+    else
+        # Ensure we are inside a git repo for --local
+        if ! git rev-parse --is-inside-work-tree &>/dev/null; then
+            die "Not inside a git repository. Use --global or navigate to a repo first."
+        fi
+    fi
+
+    git config "${git_flag}" user.name "${git_name}"
+    git config "${git_flag}" user.email "${found_email}"
+
+    log_success "Switched git identity for ${scope_label}:"
+    echo ""
+    echo "  user.name  = ${git_name}"
+    echo "  user.email = ${found_email}"
+    echo ""
+
+    if [[ "${scope}" != "global" ]]; then
+        log_info "Clone/push via: git@${found_alias}:<org>/<repo>.git"
+    fi
 }

@@ -125,6 +125,15 @@ gh-accounts split-mode disable    # Remove Include directive
 gh-accounts merge-configs         # Merge split files back into unified config
 ```
 
+### Switch git identity
+
+```bash
+gh-accounts switch work              # sets user.name + user.email in the current repo
+gh-accounts switch personal --global  # sets them globally (~/.gitconfig)
+```
+
+This runs `git config user.name` and `git config user.email` so your commits are attributed to the correct account — no manual editing needed.
+
 ### Clone with a specific account
 
 ```bash
@@ -255,7 +264,7 @@ Switch freely between modes — `merge-configs` and `split-mode enable/disable` 
 
 ## Roadmap
 
-- [ ] `gh-accounts switch <name> [--global]` — set `user.name` and `user.email` for the current repo (default) or globally, so commits are attributed to the correct identity
+- [x] `gh-accounts switch <name> [--global]` — set `user.name` and `user.email` for the current repo (default) or globally, so commits are attributed to the correct identity
 - [ ] `gh-accounts import` — import existing SSH keys into management
 - [ ] `gh-accounts config` — interactive setup wizard
 - [ ] Shell completions for bash and fish

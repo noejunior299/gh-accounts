@@ -15,17 +15,17 @@ resolve_lib_dir() {
     local bin_dir
     bin_dir="$(dirname "${script_path}")"
 
+    # Source tree: bin/gh-accounts → ../lib/ (prefer dev source)
+    local source_lib="${bin_dir}/../lib"
+    if [[ -d "${source_lib}" ]]; then
+        echo "$(cd "${source_lib}" && pwd)"
+        return
+    fi
+
     # Installed: /usr/local/bin/gh-accounts → libs at /usr/local/share/gh-accounts/lib/
     local installed_lib="/usr/local/share/gh-accounts/lib"
     if [[ -d "${installed_lib}" ]]; then
         echo "${installed_lib}"
-        return
-    fi
-
-    # Source tree: bin/gh-accounts → ../lib/
-    local source_lib="${bin_dir}/../lib"
-    if [[ -d "${source_lib}" ]]; then
-        echo "$(cd "${source_lib}" && pwd)"
         return
     fi
 
@@ -63,6 +63,7 @@ print_help() {
     list                         List all configured accounts
     delete <name>                Delete an account and its keys
     update <name> --email <addr> Update account email
+    switch <name> [--global]     Set git user.name/email for current repo or globally
     test <name>                  Test SSH authentication
     backup                       Create a manual backup
     restore                      Restore from a backup
@@ -81,6 +82,8 @@ print_help() {
     gh-accounts test work
     gh-accounts update work --email new@company.com
     gh-accounts delete personal
+    gh-accounts switch work
+    gh-accounts switch work --global
     gh-accounts split-mode enable
     gh-accounts export --json
 
@@ -142,6 +145,23 @@ main() {
                 die "Usage: gh-accounts update <account_name> --email <new_email>"
             fi
             account_update "${name}" "${new_email}"
+            ;;
+
+        switch)
+            print_banner
+            local name="${1:-}"
+            shift || true
+            local scope="local"
+            while [[ $# -gt 0 ]]; do
+                case "${1}" in
+                    --global) scope="global"; shift ;;
+                    *) die "Unknown option: ${1}" ;;
+                esac
+            done
+            if [[ -z "${name}" ]]; then
+                die "Usage: gh-accounts switch <account_name> [--global]"
+            fi
+            account_switch "${name}" "${scope}"
             ;;
 
         test)
