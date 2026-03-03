@@ -46,6 +46,8 @@ source "${LIB_DIR}/config.sh"
 source "${LIB_DIR}/backup.sh"
 # shellcheck source=../lib/account.sh
 source "${LIB_DIR}/account.sh"
+# shellcheck source=../lib/agent.sh
+source "${LIB_DIR}/agent.sh"
 # shellcheck source=../lib/doctor.sh
 source "${LIB_DIR}/doctor.sh"
 
@@ -65,6 +67,11 @@ print_help() {
     update <name> --email <addr> Update account email
     switch <name> [--global]     Set git user.name/email for current repo or globally
     test <name>                  Test SSH authentication
+    agent-status                 Show agent key breakdown
+    agent-load <name>            Load a key into ssh-agent on demand
+    agent-clean                  Remove GitHub keys from ssh-agent
+    agent-reset                  Clean agent + reconfigure
+    harden                       Add IdentitiesOnly yes to SSH config
     backup                       Create a manual backup
     restore                      Restore from a backup
     doctor                       Run diagnostic checks
@@ -84,11 +91,15 @@ print_help() {
     gh-accounts delete personal
     gh-accounts switch work
     gh-accounts switch work --global
+    gh-accounts agent-status
+    gh-accounts agent-load work
+    gh-accounts agent-clean
+    gh-accounts harden
     gh-accounts split-mode enable
     gh-accounts export --json
 
   DOCUMENTATION
-    https://github.com/noejunior792/gh-accounts
+    https://github.com/noejunior299/gh-accounts
 
 HELP
 }
@@ -171,6 +182,35 @@ main() {
                 die "Usage: gh-accounts test <account_name>"
             fi
             account_test "${name}"
+            ;;
+
+        agent-status)
+            print_banner
+            agent_status
+            ;;
+
+        agent-load)
+            print_banner
+            local name="${1:-}"
+            if [[ -z "${name}" ]]; then
+                die "Usage: gh-accounts agent-load <account_name>"
+            fi
+            agent_load "${name}"
+            ;;
+
+        agent-clean)
+            print_banner
+            agent_clean
+            ;;
+
+        agent-reset)
+            print_banner
+            agent_reset
+            ;;
+
+        harden)
+            print_banner
+            agent_harden
             ;;
 
         backup)

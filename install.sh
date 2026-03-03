@@ -44,7 +44,7 @@ resolve_source_dir() {
     tmp_dir="$(mktemp -d)"
     info "Downloading gh-accounts..." >&2
     if command -v git &>/dev/null; then
-        git clone --depth 1 https://github.com/noejunior792/gh-accounts.git "${tmp_dir}/gh-accounts" 2>/dev/null \
+        git clone --depth 1 https://github.com/noejunior299/gh-accounts.git "${tmp_dir}/gh-accounts" 2>/dev/null \
             || die "Failed to clone repository."
         echo "${tmp_dir}/gh-accounts"
     else

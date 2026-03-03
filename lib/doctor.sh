@@ -20,6 +20,7 @@ doctor_run() {
     _doctor_issues=0
 
     doctor_check_agent
+    doctor_check_agent_pollution
     doctor_check_permissions
     doctor_check_config_integrity
     doctor_check_keys
@@ -50,6 +51,27 @@ doctor_check_agent() {
         echo -e "${CLR_RED}not running${CLR_RESET}"
         echo -e "    ${CLR_YELLOW}→ Start it with: eval \"\$(ssh-agent -s)\"${CLR_RESET}"
         _doctor_issues=$((_doctor_issues + 1))
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Check: agent pollution (multiple GitHub keys loaded)
+# ---------------------------------------------------------------------------
+doctor_check_agent_pollution() {
+    echo -n "  Checking agent pollution... "
+
+    local gh_count
+    gh_count="$(_agent_github_key_count 2>/dev/null || echo 0)"
+
+    if [[ ${gh_count} -gt 1 ]]; then
+        echo -e "${CLR_YELLOW}${gh_count} GitHub keys loaded${CLR_RESET}"
+        echo -e "    ${CLR_YELLOW}→ Risk: 'Too many authentication failures' on non-GitHub hosts${CLR_RESET}"
+        echo -e "    ${CLR_YELLOW}→ Fix: gh-accounts agent-clean${CLR_RESET}"
+        _doctor_issues=$((_doctor_issues + 1))
+    elif [[ ${gh_count} -eq 1 ]]; then
+        echo -e "${CLR_GREEN}1 GitHub key (safe)${CLR_RESET}"
+    else
+        echo -e "${CLR_GREEN}no GitHub keys in agent${CLR_RESET}"
     fi
 }
 
