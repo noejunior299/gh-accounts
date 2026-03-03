@@ -33,10 +33,6 @@ account_create() {
     set_key_permissions "${kp}"
     log_success "Key pair created: ${kp}"
 
-    # Add key to ssh-agent
-    ensure_ssh_agent
-    ssh-add "${kp}" 2>/dev/null || log_warn "Could not add key to ssh-agent."
-
     # Write config entry
     if is_split_mode_enabled; then
         config_add_split "${account}" "${email}"

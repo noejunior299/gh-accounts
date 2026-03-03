@@ -21,6 +21,8 @@ When you work with multiple GitHub accounts (personal, work, freelance, open-sou
 - **Test** SSH authentication against GitHub
 - **Backup** and **restore** your entire SSH configuration
 - **Doctor** — diagnostics for permissions, agent, duplicates, integrity
+- **Agent management** — clean, reset, load, and inspect SSH agent keys
+- **Harden** — prevent agent pollution with `IdentitiesOnly yes`
 - **Split mode** — optional per-account config files for team/org setups
 - **Merge / split** configs between unified and split modes
 - **Export** accounts as structured JSON
@@ -33,7 +35,7 @@ When you work with multiple GitHub accounts (personal, work, freelance, open-sou
 ### From source (recommended)
 
 ```bash
-git clone https://github.com/noejunior792/gh-accounts.git
+git clone https://github.com/noejunior299/gh-accounts.git
 cd gh-accounts
 sudo bash install.sh
 ```
@@ -41,7 +43,7 @@ sudo bash install.sh
 ### One-liner (remote)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/noejunior792/gh-accounts/main/install.sh | sudo bash
+curl -fsSL https://raw.githubusercontent.com/noejunior299/gh-accounts/main/install.sh | sudo bash
 ```
 
 ### Uninstall
@@ -71,8 +73,9 @@ gh-accounts create personal me@gmail.com
 This will:
 1. Generate an `ed25519` SSH key pair at `~/.ssh/github-<name>`
 2. Add a `Host github-<name>` block to `~/.ssh/config`
-3. Add the key to `ssh-agent`
-4. Print the public key for you to add to GitHub
+3. Print the public key for you to add to GitHub
+
+> **Note:** Keys are no longer auto-loaded into the agent. Use `agent-load` to load a key on demand.
 
 ### List accounts
 
@@ -117,6 +120,20 @@ gh-accounts doctor
 gh-accounts export --json
 ```
 
+### Agent management
+
+```bash
+gh-accounts agent-status           # Show loaded keys and GitHub identity count
+gh-accounts agent-load work        # Load a specific account key into the agent
+gh-accounts agent-clean            # Remove all GitHub keys from the agent
+gh-accounts agent-reset            # Same as clean — reset agent to a clean state
+gh-accounts harden                 # Add 'IdentitiesOnly yes' to SSH config (persistent fix)
+```
+
+`agent-status` shows how many keys are loaded, which belong to GitHub accounts, and warns if more than one is active (which can cause auth failures on non-GitHub hosts).
+
+`harden` writes a global `Host *` block with `IdentitiesOnly yes` so SSH only uses the key specified in each Host block — even if the agent has many keys loaded. This is the permanent fix for agent pollution.
+
 ### Split mode
 
 ```bash
@@ -153,6 +170,7 @@ gh-accounts/
 │   ├── utils.sh             # Colors, logging, validation, constants
 │   ├── config.sh            # SSH config read/write (unified + split)
 │   ├── account.sh           # Account CRUD, test, export
+│   ├── agent.sh             # SSH agent management (clean, load, harden)
 │   ├── backup.sh            # Backup and restore
 │   └── doctor.sh            # Diagnostic checks
 ├── install.sh               # System-wide installer
@@ -229,6 +247,19 @@ Switch freely between modes — `merge-configs` and `split-mode enable/disable` 
 - **Duplicate detection** prevents alias collisions
 - **No secrets** are ever printed or logged (only public keys)
 
+### Agent isolation
+
+Loading multiple SSH keys into `ssh-agent` globally causes **agent pollution** — OpenSSH offers all loaded keys to every host, which can trigger `Too many authentication failures` on non-GitHub servers.
+
+**gh-accounts** prevents this by:
+
+1. **Not auto-loading keys** — `create` no longer runs `ssh-add`. Load keys explicitly with `agent-load`.
+2. **`harden` command** — adds `Host * / IdentitiesOnly yes` to your SSH config, ensuring each connection only uses the key specified in its `IdentityFile` directive.
+3. **`agent-clean`** — removes GitHub keys from the agent when you need a clean slate.
+4. **`doctor`** — detects agent pollution and suggests remediation.
+
+> **Note:** Desktop environments using GNOME Keyring as the SSH agent may re-inject keys after removal. Running `gh-accounts harden` is the permanent fix in those environments.
+
 ---
 
 ## Compatibility
@@ -265,6 +296,7 @@ Switch freely between modes — `merge-configs` and `split-mode enable/disable` 
 ## Roadmap
 
 - [x] `gh-accounts switch <name> [--global]` — set `user.name` and `user.email` for the current repo (default) or globally, so commits are attributed to the correct identity
+- [x] `gh-accounts agent-*` / `harden` — SSH agent management and pollution prevention
 - [ ] `gh-accounts import` — import existing SSH keys into management
 - [ ] `gh-accounts config` — interactive setup wizard
 - [ ] Shell completions for bash and fish
