@@ -1,0 +1,237 @@
+.TH "gh\-accounts" "1" "March 2026" "gh\-accounts 1.0.0" "User Commands"
+.SH NAME
+.PP
+gh\-accounts \- Manage multiple GitHub SSH identities on Linux & macOS
+.SH SYNOPSIS
+.PP
+\fBgh\-accounts\fP <command> [arguments] [options]
+.SH DESCRIPTION
+.PP
+gh\-accounts automates the creation, configuration, and management of multiple SSH identities for different GitHub accounts. It eliminates manual SSH key and config management while enforcing correct permissions and providing clear diagnostics.
+.SH COMMANDS
+.TP
+.B create <name> <email>
+Create a new GitHub SSH account with an ed25519 key pair and SSH config entry.
+.TP
+.B list, ls
+List all configured GitHub accounts with their current status.
+.TP
+.B delete, rm <name>
+Delete an account, its SSH keys, and config entries. Creates a backup first.
+.TP
+.B update <name> \-\-email <addr>
+Update an account's email address.
+.TP
+.B switch <name> [--global]
+Set git user.name and user.email for the current repository (local) or globally.
+Default is local scope (repository-only).
+.TP
+.B test <name>
+Test SSH authentication against GitHub for the specified account.
+.TP
+.B agent\-status
+Show the number of keys loaded in ssh\-agent and identify GitHub\-related keys.
+Warns if more than one GitHub key is active (which can cause auth failures).
+.TP
+.B agent\-load <name>
+Load a specific account's private key into ssh\-agent on demand.
+.TP
+.B agent\-clean
+Remove all GitHub\-related keys from ssh\-agent.
+.TP
+.B agent\-reset
+Same as agent\-clean. Reset ssh\-agent to a clean state.
+.TP
+.B harden
+Add a global Host * / IdentitiesOnly yes directive to SSH config.
+This prevents agent pollution by ensuring only specified keys are offered per connection.
+.TP
+.B backup
+Create a manual backup of ~/.ssh/config and all GitHub keys.
+Backups are stored as tar.gz files with timestamps in ~/.ssh/gh\-accounts\-backups/.
+.TP
+.B restore
+Restore a previous backup interactively.
+.TP
+.B doctor
+Run diagnostic checks on SSH config, permissions, key duplicates, and agent health.
+.TP
+.B split\-mode enable
+Enable per\-account SSH config files. Creates ~/.ssh/gh\-accounts/ and adds Include directives.
+.TP
+.B split\-mode disable
+Disable split mode and merge all account configs back into ~/.ssh/config.
+.TP
+.B merge\-configs
+Merge split config files back into the unified ~/.ssh/config.
+.TP
+.B export \-\-json
+Export all configured accounts as structured JSON.
+Useful for scripting or analysis.
+.TP
+.B version, \-\-version, \-v
+Print the version number.
+.TP
+.B help, \-\-help, \-h
+Show this help message.
+.SH EXAMPLES
+.PP
+Create two GitHub accounts:
+.IP "" 4
+.EX
+gh\-accounts create work work@company.com
+gh\-accounts create personal me@gmail.com
+.EE
+.PP
+List all accounts:
+.IP "" 4
+.EX
+gh\-accounts list
+.EE
+.PP
+Test SSH access for the work account:
+.IP "" 4
+.EX
+gh\-accounts test work
+.EE
+.PP
+Switch git identity in current repo:
+.IP "" 4
+.EX
+gh\-accounts switch work
+.EE
+.PP
+Load a key into the agent:
+.IP "" 4
+.EX
+gh\-accounts agent\-load work
+.EE
+.PP
+Enable split mode (per\-account config files):
+.IP "" 4
+.EX
+gh\-accounts split\-mode enable
+.EE
+.PP
+Run diagnostics:
+.IP "" 4
+.EX
+gh\-accounts doctor
+.EE
+.SH SSH KEY SPECIFICATIONS
+.PP
+\fBAlgorithm\fR: ed25519 (modern, fast, secure)
+.PP
+\fBKey Format\fR: OpenSSH format (RFC 4251)
+.PP
+\fBKey Permissions\fR: 600 (readable/writable by owner only)
+.PP
+\fBPublic Key Permissions\fR: 644 (readable by all)
+.PP
+\fBSSH Config Permissions\fR: 600 (readable/writable by owner only)
+.SH SECURITY
+.PP
+\fBPrivate key storage\fR: Keys are stored in ~/.ssh/ with restrictive permissions (600).
+Never manually copy or share private keys.
+.PP
+\fBSSH agent management\fR: Loading multiple keys into ssh\-agent can cause "Too many authentication failures" errors on non\-GitHub hosts.
+Use \fBharden\fR to add IdentitiesOnly directives, or \fBagent\-clean\fR to remove unwanted keys.
+.PP
+\fBAutomatic backups\fR: All destructive operations (delete, update) automatically create backups before making changes.
+.PP
+\fBClone examples\fR:
+.IP "" 4
+.EX
+git clone git@github\-work:org/repo.git    # Uses work account
+git clone git@github\-personal:user/repo.git  # Uses personal account
+.EE
+.SH FILES
+.PP
+\fB~/.ssh/config\fR
+.RS 4
+Main SSH configuration file (or Include directives in split mode).
+Edited by gh\-accounts to add Host blocks for each account.
+.RE
+.PP
+\fB~/.ssh/gh\-accounts\-backups/\fR
+.RS 4
+Directory containing timestamped backups of SSH config and keys.
+.RE
+.PP
+\fB~/.ssh/gh\-accounts/\fR
+.RS 4
+(Split mode only) Directory containing per\-account config files.
+.RE
+.PP
+\fB/usr/local/bin/gh\-accounts\fR
+.RS 4
+Installed executable (when installed system\-wide).
+.RE
+.PP
+\fB/usr/local/share/gh\-accounts/lib/\fR
+.RS 4
+Installed library modules.
+.RE
+.SH INSTALLATION
+.PP
+From source:
+.IP "" 4
+.EX
+git clone https://github.com/noejunior299/gh\-accounts.git
+cd gh\-accounts
+sudo bash install.sh
+.EE
+.PP
+One\-liner:
+.IP "" 4
+.EX
+curl \-fsSL https://raw.githubusercontent.com/noejunior299/gh\-accounts/main/install.sh | sudo bash
+.EE
+.PP
+Uninstall:
+.IP "" 4
+.EX
+sudo bash uninstall.sh
+.EE
+.SH ENVIRONMENT
+.PP
+\fBHOME\fR
+.RS 4
+Used to locate ~/.ssh and other user directories.
+Must be set to the user's home directory.
+.RE
+.SH COMPATIBILITY
+.PP
+\fBOS\fR: Linux (any distro), macOS
+.PP
+\fBShell\fR: Bash 4.3+ (executable from any shell)
+.PP
+\fBTools\fR: OpenSSH (ssh, ssh\-keygen, ssh\-agent, ssh\-add), standard POSIX utilities
+.SH EXIT STATUS
+.PP
+\fB0\fR
+.RS 4
+Success
+.RE
+.PP
+\fB1\fR
+.RS 4
+General error (invalid arguments, file not found, permission denied, etc.)
+.RE
+.SH AUTHOR
+.PP
+João Noe (noejunior299)
+.SH BUGS
+.PP
+Report bugs at: https://github.com/noejunior299/gh\-accounts/issues
+.SH SEE ALSO
+.PP
+\fBssh\fR(1), \fBssh\-keygen\fR(1), \fBssh\-agent\fR(1), \fBssh\-add\fR(1), \fBgit\-config\fR(1)
+.SH LICENSE
+.PP
+MIT License. See LICENSE file in repository for details.
+.SH RESOURCES
+.PP
+GitHub: https://github.com/noejunior299/gh\-accounts
+.PP
+Documentation: https://github.com/noejunior299/gh\-accounts/blob/main/README.md
