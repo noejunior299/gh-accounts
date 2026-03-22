@@ -1,0 +1,11 @@
+# ShellCheck configuration for gh-accounts
+# https://www.shellcheck.net/
+
+# Minimum severity level for reported issues
+severity=warning
+
+# Exclude specific checks (if needed)
+# disable=SC2086,SC2181
+
+# Include optional checks
+enable=all

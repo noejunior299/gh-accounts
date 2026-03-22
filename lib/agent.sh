@@ -14,14 +14,16 @@ _agent_list_github_keys() {
     accounts="$(config_list_accounts 2>/dev/null)" || true
     [[ -z "${accounts}" ]] && return 0
 
-    while IFS='|' read -r acct email alias kp mode managed; do
-        [[ -z "${kp}" ]] && continue
+    while IFS='|' read -r acct email _alias _kp _mode _managed; do
+        [[ -z "${acct}" ]] && continue
         # Match by key fingerprint: compute fingerprint and check if in agent
+        kp=$(config_get_key_path "${acct}")
+        [[ -z "${kp}" ]] && continue
         if [[ -f "${kp}.pub" ]]; then
             local fp
             fp="$(ssh-keygen -lf "${kp}.pub" 2>/dev/null | awk '{print $2}')" || continue
             if echo "${agent_keys}" | grep -q "${fp}"; then
-                echo "${kp}|${acct}|${email}"
+                echo "${acct}|${email}|$(host_alias_for "${acct}")"
             fi
         fi
     done <<< "${accounts}"
@@ -214,18 +216,22 @@ agent_harden() {
             fi
             header_done=1
             # Insert the hardening block
-            echo "Host *" >> "${tmp_file}"
-            echo "    IdentitiesOnly yes" >> "${tmp_file}"
-            echo "" >> "${tmp_file}"
+            {
+                echo "Host *"
+                echo "    IdentitiesOnly yes"
+                echo ""
+            } >> "${tmp_file}"
         fi
         echo "${line}" >> "${tmp_file}"
     done < "${GH_SSH_CONFIG}"
 
     # If file was empty or only had Include lines
     if [[ ${header_done} -eq 0 ]]; then
-        echo "Host *" >> "${tmp_file}"
-        echo "    IdentitiesOnly yes" >> "${tmp_file}"
-        echo "" >> "${tmp_file}"
+        {
+            echo "Host *"
+            echo "    IdentitiesOnly yes"
+            echo ""
+        } >> "${tmp_file}"
     fi
 
     mv "${tmp_file}" "${GH_SSH_CONFIG}"

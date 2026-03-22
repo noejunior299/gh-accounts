@@ -1,0 +1,30 @@
+# Backup & restore artifacts
+gh-accounts-backups/
+*.backup
+*.tar.gz
+
+# SSH keys and configs (development/testing)
+.ssh/
+github-*
+!github-*.pub
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS
+Thumbs.db
+.Thumbs.db
+
+# Development
+.env
+.envrc
+.pre-commit-config.yaml.local

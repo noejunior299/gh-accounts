@@ -47,7 +47,8 @@ account_create() {
     cat "${kp}.pub"
     echo ""
     log_info "Git clone usage:"
-    echo "  git clone git@$(host_alias_for "${account}"):username/repo.git"
+    alias=$(host_alias_for "${account}")
+    echo "  git clone git@${alias}:username/repo.git"
 }
 
 account_delete() {
@@ -201,7 +202,7 @@ account_export_json() {
 
         local pub_key=""
         if [[ -f "${kp}.pub" ]]; then
-            pub_key="$(cat "${kp}.pub" | tr -d '\n')"
+            pub_key=$(<"${kp}.pub" tr -d '\n')
         fi
 
         local managed_bool="true"

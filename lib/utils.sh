@@ -62,7 +62,8 @@ print_banner() {
 /___/
 EOF
     echo -e "${CLR_RESET}"
-    echo -e "  ${CLR_BOLD}GitHub SSH Account Manager${CLR_RESET}  ·  v$(get_version)"
+    v=$(get_version)
+    echo -e "  ${CLR_BOLD}GitHub SSH Account Manager${CLR_RESET}  ·  v${v}"
     echo ""
 }
 
@@ -76,7 +77,7 @@ get_version() {
         "/usr/local/share/gh-accounts/VERSION" \
         "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/VERSION"; do
         if [[ -f "${version_file}" ]]; then
-            cat "${version_file}" | tr -d '[:space:]'
+            tr -d '[:space:]' < "${version_file}"
             return 0
         fi
     done
@@ -199,7 +200,8 @@ account_host_exists() {
 ensure_ssh_agent() {
     if ! ssh-add -l &>/dev/null; then
         if [[ -z "${SSH_AUTH_SOCK:-}" ]]; then
-            eval "$(ssh-agent -s)" >/dev/null 2>&1
+            output=$(ssh-agent -s) || return 1
+            eval "${output}" >/dev/null 2>&1
             log_info "Started ssh-agent (PID ${SSH_AGENT_PID:-unknown})."
         fi
     fi
