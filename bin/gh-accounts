@@ -18,7 +18,7 @@ resolve_lib_dir() {
     # Source tree: bin/gh-accounts → ../lib/ (prefer dev source)
     local source_lib="${bin_dir}/../lib"
     if [[ -f "${source_lib}/utils.sh" ]]; then
-        echo "$(cd "${source_lib}" && pwd)"
+        cd "${source_lib}" && pwd
         return
     fi
 
@@ -33,7 +33,8 @@ resolve_lib_dir() {
     exit 1
 }
 
-readonly LIB_DIR="$(resolve_lib_dir)"
+LIB_DIR="$(resolve_lib_dir)" || exit 1
+readonly LIB_DIR
 
 # ---------------------------------------------------------------------------
 # Source modules
@@ -258,7 +259,8 @@ main() {
             ;;
 
         version|--version|-v)
-            echo "gh-accounts v$(get_version)"
+            v=$(get_version)
+            echo "gh-accounts v${v}"
             ;;
 
         help|--help|-h)

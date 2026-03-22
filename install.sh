@@ -103,7 +103,8 @@ EOF
     success "gh-accounts installed successfully!"
     echo ""
     echo "  Run:  gh-accounts help"
-    echo "  Version: $(cat "${INSTALL_SHARE}/VERSION" | tr -d '[:space:]')"
+    v=$(tr -d '[:space:]' < "${INSTALL_SHARE}/VERSION")
+    echo "  Version: ${v}"
     echo ""
 }
 

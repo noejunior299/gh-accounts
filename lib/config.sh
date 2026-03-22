@@ -109,7 +109,7 @@ _config_flush_block() {
     if [[ "${alias}" == "github.com" ]]; then acct="default"
     elif [[ "${alias}" =~ ^github-(.+)$ ]]; then acct="${BASH_REMATCH[1]:-${alias}}"
     else acct="${alias}"; fi
-    local key_path="${identity/#\~/$HOME}"
+    local key_path="${identity/#\~/${HOME}}"
     local email
     if [[ -n "${managed_email}" ]]; then email="${managed_email}"
     else email="$(email_from_pubkey "${key_path}")"; fi
