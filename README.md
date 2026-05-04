@@ -151,6 +151,26 @@ gh-accounts switch personal --global  # sets them globally (~/.gitconfig)
 
 This runs `git config user.name` and `git config user.email` so your commits are attributed to the correct account — no manual editing needed.
 
+### Set default account
+
+```bash
+gh-accounts set-default work
+```
+
+This adds a `Host github.com` block to your SSH config, so you can clone repos without a prefix:
+
+```bash
+git clone git@github.com:user/repo.git  # uses the default account
+```
+
+Other accounts still work with their prefixes:
+
+```bash
+git clone git@github-work:org/repo.git
+```
+
+> **Note:** Only one account can be default at a time. Setting a new default replaces the previous one.
+
 ### Clone with a specific account
 
 ```bash
@@ -296,6 +316,7 @@ Loading multiple SSH keys into `ssh-agent` globally causes **agent pollution** �
 ## Roadmap
 
 - [x] `gh-accounts switch <name> [--global]` — set `user.name` and `user.email` for the current repo (default) or globally, so commits are attributed to the correct identity
+- [x] `gh-accounts set-default <name>` — set an account as the default for `github.com` (no prefix needed for clones)
 - [x] `gh-accounts agent-*` / `harden` — SSH agent management and pollution prevention
 - [ ] `gh-accounts import` — import existing SSH keys into management
 - [ ] `gh-accounts config` — interactive setup wizard
