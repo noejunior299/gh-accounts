@@ -30,7 +30,7 @@ die()     { error "$@"; exit 1; }
 # ---------------------------------------------------------------------------
 resolve_source_dir() {
     # If running from a cloned repo
-    if [[ -f "${BASH_SOURCE[0]}" ]]; then
+    if [[ -n "${BASH_SOURCE[0]:-}" ]] && [[ -f "${BASH_SOURCE[0]}" ]]; then
         local dir
         dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         if [[ -d "${dir}/bin" ]] && [[ -d "${dir}/lib" ]]; then
