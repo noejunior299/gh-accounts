@@ -286,3 +286,32 @@ account_switch() {
         log_info "Clone/push via: git@${found_alias}:<org>/<repo>.git"
     fi
 }
+
+account_set_default() {
+    local account="${1}"
+
+    # Validate account exists
+    local accounts found=0
+    accounts="$(config_list_accounts)"
+    while IFS='|' read -r acct _ _ _ _ _; do
+        if [[ "${acct}" == "${account}" ]]; then
+            found=1
+            break
+        fi
+    done <<< "${accounts}"
+
+    [[ ${found} -eq 0 ]] && die "Account '${account}' not found. Run 'gh-accounts list' to see available accounts."
+
+    # Auto-backup before modifying config
+    backup_create_auto
+
+    config_set_default "${account}"
+
+    log_info "You can now clone repos without prefix:"
+    echo ""
+    echo "  git clone git@github.com:<user>/<repo>.git"
+    echo ""
+    log_info "To use other accounts, use their prefixes:"
+    echo ""
+    echo "  git clone git@github-${account}:<org>/<repo>.git"
+}

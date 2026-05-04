@@ -277,3 +277,50 @@ config_get_all_aliases() {
     fi
     printf '%s\n' "${aliases[@]}" | sort -u
 }
+
+# Set a default account for SSH (Host github.com without prefix)
+config_set_default() {
+    local account="${1}"
+    local key_path
+    key_path="$(key_path_for "${account}")"
+    [[ ! -f "${key_path}" ]] && die "Key not found for account '${account}': ${key_path}"
+
+    # Check if split mode is enabled
+    if [[ -f "${GH_SSH_CONFIG}" ]] && grep -q "^Include ${GH_SPLIT_DIR}/\*$" "${GH_SSH_CONFIG}"; then
+        die "Cannot set default account in split mode. Run 'gh-accounts merge-configs' first."
+    fi
+
+    ensure_ssh_config
+
+    # Remove any existing Host github.com block managed by gh-accounts
+    if [[ -f "${GH_SSH_CONFIG}" ]]; then
+        local tmp_file
+        tmp_file="$(mktemp)"
+        local skip=0
+        while IFS= read -r line; do
+            if [[ "${line}" =~ ^#\ gh-accounts\ ::\ default ]]; then skip=1; continue; fi
+            if [[ ${skip} -eq 1 ]]; then
+                [[ -z "${line}" ]] && { skip=0; continue; }
+                continue
+            fi
+            if [[ "${line}" =~ ^Host\ github\.com$ ]]; then skip=1; continue; fi
+            echo "${line}" >> "${tmp_file}"
+        done < "${GH_SSH_CONFIG}"
+        mv "${tmp_file}" "${GH_SSH_CONFIG}"
+    fi
+
+    # Add the new default Host block
+    local email
+    email="$(email_from_pubkey "${key_path}")"
+    { echo ""; cat <<EOF
+# gh-accounts :: default <${email}>
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ${key_path}
+    IdentitiesOnly yes
+EOF
+    } >> "${GH_SSH_CONFIG}"
+    chmod 600 "${GH_SSH_CONFIG}"
+    log_success "Set '${account}' as the default SSH account for github.com."
+}

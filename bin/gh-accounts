@@ -67,6 +67,7 @@ print_help() {
     delete <name>                Delete an account and its keys
     update <name> --email <addr> Update account email
     switch <name> [--global]     Set git user.name/email for current repo or globally
+    set-default <name>           Set account as default for github.com (no prefix needed)
     test <name>                  Test SSH authentication
     agent-status                 Show agent key breakdown
     agent-load <name>            Load a key into ssh-agent on demand
@@ -92,6 +93,7 @@ print_help() {
     gh-accounts delete personal
     gh-accounts switch work
     gh-accounts switch work --global
+    gh-accounts set-default work
     gh-accounts agent-status
     gh-accounts agent-load work
     gh-accounts agent-clean
@@ -174,6 +176,18 @@ main() {
                 die "Usage: gh-accounts switch <account_name> [--global]"
             fi
             account_switch "${name}" "${scope}"
+            ;;
+
+        set-default)
+            print_banner
+            local name="${1:-}"
+            if [[ -z "${name}" ]]; then
+                die "Usage: gh-accounts set-default <account_name>"
+            fi
+            if [[ $# -gt 1 ]]; then
+                die "Too many arguments. Usage: gh-accounts set-default <account_name>"
+            fi
+            account_set_default "${name}"
             ;;
 
         test)
