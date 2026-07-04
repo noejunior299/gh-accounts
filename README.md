@@ -60,10 +60,10 @@ cd gh-accounts
 PowerShell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-#### One-liner (remote)
+#### One-liner (remote, run as Administrator)
 
 ```powershell
-powershell -Command "& { Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/noejunior299/gh-accounts/main/install.ps1 | Invoke-Expression }"
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; iex (iwr -UseBasicParsing https://raw.githubusercontent.com/noejunior299/gh-accounts/main/install.ps1)
 ```
 
 > **Note:** Run PowerShell as **Administrator** for the installer. The script copies files to `%ProgramFiles%\gh-accounts\` and adds the `bin\` folder to your user PATH.
@@ -226,7 +226,8 @@ git clone git@github-personal:user/repo.git
 gh-accounts/
 ├── bin/
 │   ├── gh-accounts          # CLI entry point (Bash — Linux/macOS)
-│   └── gh-accounts.ps1      # CLI entry point (PowerShell — Windows)
+│   ├── gh-accounts.ps1      # CLI entry point (PowerShell — Windows)
+│   └── gh-accounts.cmd      # Wrapper (Windows, created by install.ps1)
 ├── lib/
 │   ├── utils.sh             # Colors, logging, validation, constants (Bash)
 │   ├── config.sh            # SSH config read/write (Bash)

@@ -2,8 +2,14 @@
 .SYNOPSIS
     Install gh-accounts for Windows (PowerShell).
 .DESCRIPTION
-    Copies gh-accounts module and CLI to $env:ProgramFiles\gh-accounts\
-    and adds the directory to the user's PATH.
+    Copies gh-accounts module and CLI to $env:ProgramFiles\gh-accounts\,
+    adds a gh-accounts.cmd wrapper to the PATH, so you can run:
+      gh-accounts help
+    from any terminal.
+
+    Supports both local execution (from a cloned repo) and remote
+    installation via:
+      iwr -UseBasicParsing https://.../install.ps1 | iex
 #>
 
 #Requires -Version 5.1 -RunAsAdministrator
@@ -11,18 +17,61 @@
 $CLR_GREEN = "$([char]0x1b)[0;32m"
 $CLR_CYAN = "$([char]0x1b)[0;36m"
 $CLR_RED = "$([char]0x1b)[0;31m"
+$CLR_YELLOW = "$([char]0x1b)[0;33m"
 $CLR_BOLD = "$([char]0x1b)[1m"
 $CLR_RESET = "$([char]0x1b)[0m"
 
 function info    { Write-Host "$CLR_CYAN[info]$CLR_RESET    $args" }
 function success { Write-Host "$CLR_GREEN[success]$CLR_RESET $args" }
+function warn    { Write-Host "$CLR_YELLOW[warn]$CLR_RESET    $args" }
 function error   { Write-Host "$CLR_RED[error]$CLR_RESET   $args" -ForegroundColor Red }
 function die     { error $args; exit 1 }
 
-# Resolve source directory
-$sourceDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-if (-not (Test-Path (Join-Path $sourceDir "bin\gh-accounts.ps1"))) {
-    die "Could not find bin\gh-accounts.ps1 in source directory."
+# ---------------------------------------------------------------------------
+# Resolve source directory (local clone or download from GitHub)
+# ---------------------------------------------------------------------------
+$sourceDir = $null
+
+# Try local — running from a cloned repo
+if ($MyInvocation.MyCommand.Path) {
+    $scriptParent = Split-Path -Parent $MyInvocation.MyCommand.Path
+    if (Test-Path (Join-Path $scriptParent "bin\gh-accounts.ps1")) {
+        $sourceDir = $scriptParent
+    }
+}
+
+if (-not $sourceDir) {
+    # Remote install — download to a temp folder
+    $tmpDir = Join-Path $env:TEMP "gh-accounts-install"
+    if (Test-Path $tmpDir) { Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue }
+    New-Item -ItemType Directory -Path $tmpDir -Force | Out-Null
+
+    $githubUrl = "https://raw.githubusercontent.com/noejunior299/gh-accounts/main"
+    $filesToDownload = @(
+        "bin/gh-accounts.ps1",
+        "lib/GhAccounts.psm1",
+        "lib/GhAccounts.psd1",
+        "VERSION",
+        "LICENSE"
+    )
+
+    info "Downloading gh-accounts from GitHub..."
+    foreach ($relativePath in $filesToDownload) {
+        $url = "$githubUrl/$relativePath"
+        $dest = Join-Path $tmpDir $relativePath
+        $parentDir = Split-Path -Parent $dest
+        if (-not (Test-Path $parentDir)) {
+            New-Item -ItemType Directory -Path $parentDir -Force | Out-Null
+        }
+        try {
+            Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $dest -ErrorAction Stop
+            info "  Downloaded $relativePath"
+        } catch {
+            die "Failed to download $url`: $_"
+        }
+    }
+
+    $sourceDir = $tmpDir
 }
 
 $installDir = "$env:ProgramFiles\gh-accounts"
@@ -61,6 +110,14 @@ if (Test-Path "$sourceDir\LICENSE") {
     Copy-Item "$sourceDir\LICENSE" "$installDir\LICENSE" -Force
 }
 
+# Create gh-accounts.cmd wrapper so users can run `gh-accounts`
+$cmdWrapper = '@echo off
+powershell -ExecutionPolicy Bypass -File "%~dp0\gh-accounts.ps1" %*'
+$cmdWrapper | Out-File -FilePath "$installDir\bin\gh-accounts.cmd" -Encoding ASCII -Force
+
+# Remove legacy wrappers
+Remove-Item "$installDir\bin\gh-accounts.bat" -ErrorAction SilentlyContinue
+
 # Add to PATH
 $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
 $binPath = "$installDir\bin"
@@ -78,14 +135,20 @@ $env:Path = "$env:Path;$binPath"
 Write-Host ""
 success "gh-accounts installed successfully!"
 Write-Host ""
-Write-Host "  Run:  gh-accounts help"
 $versionFile = "$installDir\VERSION"
 if (Test-Path $versionFile) {
     $v = (Get-Content $versionFile -Raw).Trim()
     Write-Host "  Version: $v"
 }
 Write-Host ""
-Write-Host "  ${CLR_YELLOW}Note:${CLR_RESET} You may need to restart your terminal for PATH changes to take effect."
-Write-Host "  ${CLR_YELLOW}Note:${CLR_RESET} OpenSSH Client is required. Install with:"
+Write-Host "  Run:  gh-accounts help"
+Write-Host ""
+warn "You may need to restart your terminal for PATH changes to take effect."
+warn "OpenSSH Client is required. Install with:"
 Write-Host "    Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0"
 Write-Host ""
+
+# Clean up temp download
+if ($sourceDir -like "$env:TEMP\gh-accounts-install*") {
+    Remove-Item $sourceDir -Recurse -Force -ErrorAction SilentlyContinue
+}
