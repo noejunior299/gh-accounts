@@ -12,7 +12,14 @@
       iwr -UseBasicParsing https://.../install.ps1 | iex
 #>
 
-#Requires -Version 5.1 -RunAsAdministrator
+#Requires -Version 5.1
+
+# Explicit admin check (works even when piped via iex)
+$currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "FATAL: Administrator privileges required. Run PowerShell as Administrator and try again." -ForegroundColor Red
+    exit 1
+}
 
 $CLR_GREEN = "$([char]0x1b)[0;32m"
 $CLR_CYAN = "$([char]0x1b)[0;36m"
