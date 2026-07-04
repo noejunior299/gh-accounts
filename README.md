@@ -1,6 +1,6 @@
 # gh-accounts
 
-> Manage multiple GitHub SSH identities on Linux & macOS — securely, scalably, and without external dependencies.
+> Manage multiple GitHub SSH identities on Linux, macOS & Windows — securely, scalably, and without external dependencies.
 
 ---
 
@@ -26,13 +26,15 @@ When you work with multiple GitHub accounts (personal, work, freelance, open-sou
 - **Split mode** — optional per-account config files for team/org setups
 - **Merge / split** configs between unified and split modes
 - **Export** accounts as structured JSON
-- Zero external dependencies — only native Linux tools
+- Zero external dependencies — only native tools (Linux: coreutils, grep, sed; Windows: PowerShell + OpenSSH)
 
 ---
 
 ## Installation
 
-### From source (recommended)
+### Linux & macOS
+
+#### From source (recommended)
 
 ```bash
 git clone https://github.com/noejunior299/gh-accounts.git
@@ -40,13 +42,45 @@ cd gh-accounts
 sudo bash install.sh
 ```
 
-### One-liner (remote)
+#### One-liner (remote)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/noejunior299/gh-accounts/main/install.sh | sudo bash
 ```
 
+### Windows
+
+> Requires **PowerShell 5.1+** and **OpenSSH Client** (built-in on Windows 10 1809+).
+
+#### From source (recommended)
+
+```powershell
+git clone https://github.com/noejunior299/gh-accounts.git
+cd gh-accounts
+PowerShell -ExecutionPolicy Bypass -File install.ps1
+```
+
+#### One-liner (remote)
+
+```powershell
+powershell -Command "& { Invoke-WebRequest -UseBasicParsing https://raw.githubusercontent.com/noejunior299/gh-accounts/main/install.ps1 | Invoke-Expression }"
+```
+
+> **Note:** Run PowerShell as **Administrator** for the installer. The script copies files to `%ProgramFiles%\gh-accounts\` and adds the `bin\` folder to your user PATH.
+
+#### Verify OpenSSH Client
+
+```powershell
+# Check if OpenSSH Client is installed
+Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Client*'
+
+# Install if missing (requires Administrator)
+Add-WindowsCapability -Online -Name OpenSSH.Client~~~~0.0.1.0
+```
+
 ### Uninstall
+
+#### Linux & macOS
 
 ```bash
 sudo bash uninstall.sh
@@ -57,6 +91,12 @@ Or if installed remotely:
 ```bash
 sudo rm -f /usr/local/bin/gh-accounts
 sudo rm -rf /usr/local/share/gh-accounts
+```
+
+#### Windows
+
+```powershell
+PowerShell -ExecutionPolicy Bypass -File uninstall.ps1
 ```
 
 ---
@@ -185,16 +225,21 @@ git clone git@github-personal:user/repo.git
 ```
 gh-accounts/
 ├── bin/
-│   └── gh-accounts          # CLI entry point — command router
+│   ├── gh-accounts          # CLI entry point (Bash — Linux/macOS)
+│   └── gh-accounts.ps1      # CLI entry point (PowerShell — Windows)
 ├── lib/
-│   ├── utils.sh             # Colors, logging, validation, constants
-│   ├── config.sh            # SSH config read/write (unified + split)
-│   ├── account.sh           # Account CRUD, test, export
-│   ├── agent.sh             # SSH agent management (clean, load, harden)
-│   ├── backup.sh            # Backup and restore
-│   └── doctor.sh            # Diagnostic checks
-├── install.sh               # System-wide installer
-├── uninstall.sh             # Clean uninstaller
+│   ├── utils.sh             # Colors, logging, validation, constants (Bash)
+│   ├── config.sh            # SSH config read/write (Bash)
+│   ├── account.sh           # Account CRUD, test, export (Bash)
+│   ├── agent.sh             # SSH agent management (Bash)
+│   ├── backup.sh            # Backup and restore (Bash)
+│   ├── doctor.sh            # Diagnostic checks (Bash)
+│   ├── GhAccounts.psm1      # PowerShell module (all functions)
+│   └── GhAccounts.psd1      # PowerShell module manifest
+├── install.sh               # System-wide installer (Linux/macOS)
+├── uninstall.sh             # Clean uninstaller (Linux/macOS)
+├── install.ps1              # System-wide installer (Windows)
+├── uninstall.ps1            # Clean uninstaller (Windows)
 ├── VERSION                  # Semantic version
 ├── LICENSE                  # MIT
 └── README.md
@@ -285,13 +330,15 @@ Loading multiple SSH keys into `ssh-agent` globally causes **agent pollution** �
 ## Compatibility
 
 | Requirement | Supported |
-|---|---|
+|---|---|---|
 | Linux (any distro) | ✅ |
 | macOS | ✅ |
+| Windows 10 1809+ | ✅ (native, via PowerShell + OpenSSH Client) |
 | Bash 4.3+ / 5.x | ✅ |
 | Fish shell | ✅ (CLI is bash, works from any shell) |
+| PowerShell 5.1+ | ✅ |
 | OpenSSH | ✅ (ssh, ssh-keygen, ssh-agent, ssh-add) |
-| External deps | None — only coreutils, grep, sed, awk |
+| External deps | None — only OS-native tools (Linux: coreutils, grep, sed, awk / Windows: PowerShell + OpenSSH) |
 
 ---
 

@@ -80,6 +80,60 @@ jobs:
           echo "Checking SSH key generation practices..."
           grep -n "ssh-keygen" lib/account.sh || true
 
+  powershell:
+    name: PowerShell Validation
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify PowerShell module syntax
+        shell: pwsh
+        run: |
+          $result = [System.Management.Automation.Language.Parser]::ParseFile("lib\GhAccounts.psm1", [ref]$null, [ref]$null)
+          if ($result.Errors.Count -gt 0) {
+            $result.Errors | ForEach-Object { Write-Error "$($_.Message) at line $($_.Extent.StartLine)" }
+            exit 1
+          }
+          Write-Host "✅ GhAccounts.psm1: syntax OK"
+
+      - name: Verify CLI entry point syntax
+        shell: pwsh
+        run: |
+          $result = [System.Management.Automation.Language.Parser]::ParseFile("bin\gh-accounts.ps1", [ref]$null, [ref]$null)
+          if ($result.Errors.Count -gt 0) {
+            $result.Errors | ForEach-Object { Write-Error "$($_.Message) at line $($_.Extent.StartLine)" }
+            exit 1
+          }
+          Write-Host "✅ gh-accounts.ps1: syntax OK"
+
+      - name: Verify installer syntax
+        shell: pwsh
+        run: |
+          $result = [System.Management.Automation.Language.Parser]::ParseFile("install.ps1", [ref]$null, [ref]$null)
+          if ($result.Errors.Count -gt 0) {
+            $result.Errors | ForEach-Object { Write-Error "$($_.Message) at line $($_.Extent.StartLine)" }
+            exit 1
+          }
+          Write-Host "✅ install.ps1: syntax OK"
+
+      - name: Verify uninstaller syntax
+        shell: pwsh
+        run: |
+          $result = [System.Management.Automation.Language.Parser]::ParseFile("uninstall.ps1", [ref]$null, [ref]$null)
+          if ($result.Errors.Count -gt 0) {
+            $result.Errors | ForEach-Object { Write-Error "$($_.Message) at line $($_.Extent.StartLine)" }
+            exit 1
+          }
+          Write-Host "✅ uninstall.ps1: syntax OK"
+
+      - name: Test module import
+        shell: pwsh
+        run: |
+          Import-Module "$env:GITHUB_WORKSPACE\lib\GhAccounts.psm1" -Force
+          Write-Host "✅ Module imported successfully"
+          $exported = Get-Module GhAccounts -ErrorAction Stop | Select-Object -ExpandProperty ExportedFunctions
+          Write-Host "Exported functions: $($exported.Count)"
+
   coverage:
     name: Code Quality
     runs-on: ubuntu-latest
