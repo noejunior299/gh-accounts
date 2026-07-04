@@ -63,7 +63,7 @@ PowerShell -ExecutionPolicy Bypass -File install.ps1
 #### One-liner (remote, run as Administrator)
 
 ```powershell
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; iex (iwr -UseBasicParsing https://raw.githubusercontent.com/noejunior299/gh-accounts/main/install.ps1)
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; $s=(New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/noejunior299/gh-accounts/main/install.ps1'); iex $s
 ```
 
 > **Note:** Run PowerShell as **Administrator** for the installer. The script copies files to `%ProgramFiles%\gh-accounts\` and adds the `bin\` folder to your user PATH.
