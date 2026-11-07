@@ -7,6 +7,7 @@
 set -euo pipefail
 
 readonly INSTALL_BIN="/usr/local/bin/gh-accounts"
+readonly INSTALL_BIN_DIR="/usr/local/bin"
 readonly INSTALL_SHARE="/usr/local/share/gh-accounts"
 
 # Colors
@@ -96,6 +97,7 @@ EOF
 
     # Install binary
     info "Installing CLI to ${INSTALL_BIN}..."
+    mkdir -p "${INSTALL_BIN_DIR}"
     cp "${source_dir}/bin/gh-accounts" "${INSTALL_BIN}"
     chmod 755 "${INSTALL_BIN}"
 
